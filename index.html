@@ -1,0 +1,93 @@
+<html>
+<head>
+<style>
+html, body{
+    padding: 0;
+    margin: 0;
+}
+#cnvs {
+    background-color: #000;
+}
+</style>
+</head>
+
+<canvas id='cnvs'></canvas>
+
+<body>
+<script>
+'use strict';
+let cnvs = document.getElementById('cnvs');
+let ctx = cnvs.getContext('2d');
+
+function fts(){
+    cnvs.width = innerWidth;
+    cnvs.height = innerHeight;
+}
+
+fts();
+window.addEventListener('resize', fts);
+
+let time;
+let particles = [];
+let min_radius = 0.1; // 0...1
+let max_radius = 8; //pixels
+let kill_time_ms = 4000;
+let spread = 2; //how big is the universe?
+let spd = 15;
+let zoom = 5;
+let colour = '#fff';
+let dir = 1; //1 for away, -1 for towards
+let away_dist = 40; //arbitary spawn distance
+let switch_time_s = 5;
+
+window.addEventListener('click', ()=>dir*=-1);
+
+function spawn_particle(){
+    particles.push({
+        x: Math.random()*spread*2-spread,
+        y: Math.random()*spread*2-spread,
+        r: min_radius + Math.random() * (1 - min_radius),
+        t: time,
+    });
+}
+
+function draw_circle(x, y, r){
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI*2);
+    ctx.fill();
+}
+
+function draw_particles(){
+    ctx.fillStyle = colour;
+    for (let particle of particles){
+        let d = spd * (time - particle.t) / 1e3;
+        let cd = dir == 1 ? d : away_dist - d;
+        //yaw and pitch angles
+        let ya = Math.atan2(particle.x, cd);
+        let pa = Math.atan2(particle.y, cd);
+        draw_circle(cnvs.width/2  + ya*(cnvs.width/2*zoom),
+                    cnvs.height/2 + pa*(cnvs.height/2*zoom),
+                    Math.atan2(particle.r, cd) * max_radius * zoom);
+    }
+}
+
+
+function update(call_time){
+    //you now click to change direction...
+    //dir = parseInt(call_time / 1e3 / switch_time_s) % 2 ? -1 : 1;
+
+    time = call_time;
+
+    spawn_particle();
+    particles = particles.filter(p => time - kill_time_ms < p.t);
+
+    ctx.clearRect(0, 0, cnvs.width, cnvs.height);
+    draw_particles();
+    requestAnimationFrame(update);
+}
+
+requestAnimationFrame(update);
+
+</script>
+</body>
+</html>
